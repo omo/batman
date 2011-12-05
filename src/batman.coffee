@@ -3708,6 +3708,10 @@ Batman.DOM = {
     formfor: (node, localName, key, context) ->
       Batman.DOM.events.submit node, (node, e) -> $preventDefault e
       context.descendWithKey(key, localName)
+
+    focuson: (node, eventName, key, context) ->
+      new Batman.DOM.FocusBinding(arguments...)
+      true
   }
 
   # `Batman.DOM.events` contains the helpers used for binding to events. These aren't called by
@@ -4616,6 +4620,25 @@ class Batman.DOM.IteratorBinding extends Batman.DOM.AbstractCollectionBinding
     newNode = @prototypeNode.cloneNode(true)
     @nodeMap.set(item, newNode)
     newNode
+
+class Batman.DOM.SourceEventBinding extends Batman.DOM.AbstractAttributeBinding
+  bindImmediately: false
+  constructor: ->
+    super
+    if 0 < @filterFunctions.length
+      Batman.developer.error "Error! ContextEventBinding doesn't support keyPath with filters."
+    @renderer.on 'rendered', => @bind()
+
+  bind: ->
+    k = @get('key')
+    developer.error("#{@attributeName} requires a key") unless k
+    value = @get("keyContext.#{k}")
+    Batman.developer.error("#{@attributeName} requires the source object be an EventEmitter") unless value and typeof value.on is 'function'
+    value.on @attributeName, => @fired?()
+
+class Batman.DOM.FocusBinding extends Batman.DOM.SourceEventBinding
+  fired: ->
+    @node.focus()
 
 # Filters
 # -------
